@@ -1,0 +1,22 @@
+{
+  "subscriptions": {
+    "packages": [
+      {
+        "amount": 16,
+        "id": "i-001"
+      },
+      {
+        "amount": 32,
+        "id": "i-002"
+      },
+      {
+        "amount": 200,
+        "id": "i-018"
+      }
+    ],
+    "period": {
+      "end": "01-01-2024",
+      "start": "01-01-2023"
+    }
+  }
+}

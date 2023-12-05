@@ -1,0 +1,139 @@
+:quarkus-code-generator: link:https://code.quarkus.redhat.com/[Quarkus code generator, window="_blank", , id="rhd-source-article"]
+
+[id='lab-intro']
+= Lab Introduction
+
+_Red Hat Fuse_ is a _Karaf_ based container to run _Apache Camel_ (and Java) applications. However, since the appearance of containers and _Kubernetes_ environments, the preferred approach to deliver services is by adopting micro-services architectures.
+
+In this exercise you will undergo the process of migrating a Red Hat Fuse service into a _Camel_ on _Quarkus_ application.
+
+{empty} +
+
+[time=1]
+[id="the-service"]
+== The service
+
+For illustration purposes, the picture below shows what the _Camel_ integration end-to-end flow looks like.
+
+image::images/camel-service.png[align="center", width=80%]
+
+The service exposes a REST (Json) entrypoint and integrates with two backends, one is REST based, and the second endpoint is SOAP based. 
+
+The integration represents a composition service. It obtains information from both end systems and merges the data to respond to the client request.
+
+The service currently runs on _Red Hat Fuse_ and we want to modernise it to run on _Camel Quarkus_.
+
+{empty} +
+
+
+[time=1]
+[id="migrate-service"]
+== Migrate the service
+
+Both Fuse and Camel on Quarkus are Java projects based on Maven. Aside from packaging differences, their general structure is very similar and migrating files from one to the other is relatively easy.
+
+NOTE: The degree of difficulty to migrate a project will obviously vary depending on the complexity and coding practices of the original source code.
+
+Commonly, a Camel integration project generally involves the following resources:
+
+- *Integration flows*: Camel routes in XML/Java code
+- *Java*: for custom functionality.
+- *API contracts*: WSDLs/OpenAPI
+- *Data mappings*: XSLTs/Java
+- *Test units*: Java
+
+NOTE: In a case by case basis, projects with different needs may additionally require other type of resources, like database schemas, SQL scripts, protocol schemas, templates, properties, etc.
+
+The Fuse project to migrate in this lab contains the common elements above described, and was implemented following best coding practices at the time available.
+
+Nevertheless, the migration offers opportunities to improve/modernise coding practices and adopt new standards.
+
+{empty} +
+
+### Working on the Camel Quarkus project
+
+You typically start a _Camel on Quarkus_ project by creating a project skeleton. The {quarkus-code-generator} is a great place to start. You can use its search filter to automatically display all the _Apache Camel_ extensions available for _Quarkus_.
+
+The lab already includes a pre-generated skeleton you will use to complete the migration and help minimise inconsistencies and version differences.
+
+Inspect the list below for a summary of the files in the project you need to work on:
+
+. New resources:
+- *openapi.json* (REST definition using the OpenApi standard)
+- *Routes.java* (Where the CXF SOAP endpoint is defined)
+- *j2x.xsl* (XSLT with out-of-the-box JSON to XML transformer)
+. Migrated resources:
+- *api-medium.xml* (Camel XML routes)
+- *request.xsl* / *response.xsl* (XSLT mappings)
+- *application.properties* (configuration)
+- *ServiceTest.java* (JUnit)
+. Copied resources:
+- *s1.wsdl* (SOAP service definition)
+- *response.json* (Unit test sample)
+- *response.xml*  (Unit test sample)
+
+{empty} +
+
+### Migrate the `blueprint.xml` file
+
+The best place to start migrating code from Fuse is from the `blueprint.xml` file where beans and Camel routes are defined.
+
+[NOTE]
+-- 
+* In the sections below, we only refer to those code blocks in the blueprint file we need to migrate. +
+* All other blocks are discarded because they are _Karaf_-specific and not needed in _Camel Quarkus_.
+--
+
+#### Configuration
+
+When looking at the first code block in the blueprint file you'll find the configuration properties needed for Karaf deployments:
+--
+  <cm:property-placeholder persistent-id="demo.medium" id="demo.medium">
+  <cm:default-properties>
+      <cm:property name="rest.host" value="localhost"/>
+      <cm:property name="rest.port" value="20000"/>
+      <cm:property name="api.backend1.host" value="localhost:10000"/>
+      <cm:property name="api.backend1.path" value="/camel/subscriber/details"/>
+      <cm:property name="api.backend2.host" value="localhost:9000"/>
+  </cm:default-properties>
+  </cm:property-placeholder>
+--
+
+From the properties above we can discard `rest.host` and `rest.port` because they define a dedicated port in a shared Karaf container. In Quarkus we use the default server port because the Camel project fully owns the running instance (unlike Karaf running multiple bundles). 
+
+In a Quarkus project, all your configuration is defined in the following properties file:
+
+- src/main/resources/application.properties
+
+In the file above referenced, copy and paste the following properties, migrated from _Fuse_:
+```properties
+# REST Backend configuration
+      api.backend1.host = end1:8080
+      api.backend1.path = /camel/subscriber/details
+# JUnits and Local testing configuration
+ %dev.api.backend1.host = localhost:10000
+%test.api.backend1.path = /unit/test/subscriber/details
+
+# SOAP Backend configuration
+      api.backend2.host = end2:8080
+# JUnits and Local testing configuration
+ %dev.api.backend2.host = localhost:9000
+%test.api.backend2.host = localhost:{{quarkus.http.test-port}}
+```
+
+{empty} +
+
+#### SOAP endpoint (CXF definition)
+
+The next relevant block in the blueprint file is the CXF endpoint definition, as shown below:
+--
+  <camelcxf:cxfEndpoint id="s1"
+	 address="http://${api.backend2.host}/services/s1"
+	 serviceClass="org.example.s1.S1">
+    <camelcxf:properties>
+        <entry key="dataFormat" value="PAYLOAD"/>
+    </camelcxf:properties>
+  </camelcxf:cxfEndpoint>
+--
+
+In Camel Quarkus projects, Beans

@@ -1,0 +1,12 @@
+# MAIN route
+- from:
+    id: main
+    uri: direct:getDetails
+    steps:
+      - log:
+          message: "REST request: ${body}"
+      - to:
+          uri: language:constant:resource:classpath:response.json
+      - setHeader:
+          name: Content-Type
+          simple: application/json

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camelcxf="http://camel.apache.org/schema/blueprint/cxf"
+	   xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+       xsi:schemaLocation="
+       http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+       http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+
+	<!-- Configuration -->
+  <cm:property-placeholder persistent-id="demo.medium" id="demo.medium">
+  <cm:default-properties>
+      <cm:property name="rest.host" value="localhost"/>
+      <cm:property name="rest.port" value="20000"/>
+      <cm:property name="api.backend1.host" value="localhost:10000"/>
+      <cm:property name="api.backend1.path" value="/camel/subscriber/details"/>
+      <cm:property name="api.backend2.host" value="localhost:9000"/>
+  </cm:default-properties>
+  </cm:property-placeholder>
+
+</blueprint>

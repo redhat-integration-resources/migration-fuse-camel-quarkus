@@ -1,0 +1,28 @@
+{
+  "client": {
+    "fullName": "dummy",
+    "addressLine1": "dummy",
+    "addressLine2": "dummy",
+    "addressLine3": "dummy"
+  },
+  "subscriptions": {
+    "period": {
+      "start": "dummy",
+      "end": "dummy"
+    },
+    "packages": [
+      {
+        "id": "dummy",
+        "amount": 16
+      },
+      {
+        "id": "dummy",
+        "amount": 32
+      },
+      {
+        "id": "dummy",
+        "amount": 200
+      }
+    ]
+  }
+}

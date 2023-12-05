@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<camel>
+
+    <!-- SOAP Endpoint -->
+    <bean name="s1" type="org.apache.camel.component.cxf.jaxws.CxfEndpoint">
+      <!-- COPY/PASTE PROPERTIES HERE -->
+    </bean>
+
+    <!-- MAIN ROUTE -->
+    <route id="main">
+      <!-- COPY/PASTE DEFINITION HERE -->
+    </route>
+    
+    <!-- RESOLVES CALL TO BACKEND 1 -->
+    <route id="call-system1">
+      <from uri="direct:call-system1"/>
+      <!-- COPY/PASTE DEFINITION HERE -->
+      <log message="dummy call-system1 (to be removed)"/>
+    </route>
+
+    <!-- RESOLVES CALL TO BACKEND 2 -->
+    <route id="call-system2">
+      <from uri="direct:call-system2"/>
+      <!-- COPY/PASTE DEFINITION HERE -->
+      <log message="dummy call-system2 (to be removed)"/>
+    </route>
+
+    <!-- MAPS JSON to SOAP request -->
+    <route id="json2soap">
+      <from uri="direct:json2soap"/>
+      <!-- COPY/PASTE DEFINITION HERE -->
+      <log message="dummy"/>
+    </route>
+
+    <!-- MERGES DATA to JSON response -->
+    <route id="mapResponse">
+      <from uri="direct:mapResponse"/>
+
+      <!-- COPY/PASTE DEFINITION HERE -->
+
+      <!-- REMOVE DUMMY RESPONSE -->
+      <to uri="language:constant:resource:classpath:/data/dummy.json"/>
+    </route>
+
+</camel>

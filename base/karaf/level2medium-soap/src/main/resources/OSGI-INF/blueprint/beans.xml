@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camelcxf="http://camel.apache.org/schema/blueprint/cxf"
+	   xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+       xsi:schemaLocation="
+       http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+       http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+
+    <!-- API-DOCS Servlet in Karaf -->
+	<service interface="javax.servlet.http.HttpServlet">
+	    <service-properties>
+	        <entry key="alias" value="/rest/api-docs"/>
+	        <entry key="init-prefix" value="init."/>
+	        <entry key="init.base.path" value="http://${rest.host}:${rest.port}"/>
+	        <entry key="init.api.title" value="Camel Rest Tutorial API"/>
+	        <entry key="init.api.version" value="1.0"/>
+	        <entry key="init.api.description"
+	            value="Camel Rest Tutorial with Swagger that provides an User REST service"/>
+	    </service-properties>
+	    <bean class="org.apache.camel.component.swagger.DefaultCamelSwaggerServlet" />
+	</service>
+
+    <!-- Java defined function to use as XPATH in the XSLT	 -->
+	<bean id="x2j" class="org.custom.MyExtensionFunction1"/>
+
+</blueprint>

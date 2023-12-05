@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camelcxf="http://camel.apache.org/schema/blueprint/cxf"
+	   xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+       xsi:schemaLocation="
+       http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+       http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+
+  <camelContext xmlns="http://camel.apache.org/schema/blueprint" id="subscriber">
+
+  	<restConfiguration 
+  		component="netty-http"
+  		host="{{rest.host}}" 
+  		port="{{rest.port}}" 
+  		enableCORS="true">
+  	</restConfiguration>
+
+    <rest path="/camel">
+        <post consumes="application/json" id="getDetails" uri="/subscriber/details" produces="application/json">
+            <param name="body" required="true" type="body"/>
+            <to uri="direct:getDetails"/>
+        </post>
+    </rest>
+
+
+    <!-- MAIN ROUTE -->
+    <route id="main">
+      <from uri="direct:getDetails"/>
+
+      <convertBodyTo type="String"/>
+
+      <!-- PRESERVE ORIGINAL REQUEST PAYLOAD -->
+      <setProperty propertyName="request">
+        <simple>${body}</simple>
+      </setProperty>
+
+      <!-- RESOLVE BACKEND CALLS -->
+      <to uri="direct:call-system1"/>
+      <to uri="direct:call-system2"/>
+
+      <!-- TRANSFORM (COMPOSE) 2 XML RESPONSES INTO JSON -->
+      <to uri="direct:mapResponse"/>
+
+      <setHeader headerName="content-type">
+        <constant>application/json</constant>
+      </setHeader>
+    </route>
+
+    <!-- RESOLVES CALL TO BACKEND 1 -->
+    <route id="call-system1">
+      <from uri="direct:call-system1"/>
+
+      <log message="calling Backend1 with: ${body}"/>
+
+      <!-- CALL to BACKEND -->
+      <removeHeaders pattern="*"/>
+      <setHeader headerName="content-type">
+        <constant>application/json</constant>
+      </setHeader>
+      <to id="end1" uri="http:{{api.backend1.host}}{{api.backend1.path}}"/>
+
+      <!-- CONVERT JSON to XML (to transform later) -->
+      <to uri="direct:json2xml"/>
+
+      <!-- KEEP RESPONSE -->
+      <setProperty propertyName="subscriber-response-rest">
+        <simple>${body}</simple>
+      </setProperty>
+
+      <log message="Backend1 is: ${exchangeProperty.subscriber-response-rest}"/>
+    </route>
+
+    <!-- RESOLVES CALL TO BACKEND 2 -->
+    <route id="call-system2">
+      <from uri="direct:call-system2"/>
+
+      <!-- TRANSFORM REQUEST JSON-to-SOAP -->
+      <to uri="direct:json2soap"/>
+
+      <!-- CALL to BACKEND -->
+      <removeHeaders pattern="*"/>
+      <setHeader headerName="CamelDestinationOverrideUrl">
+        <simple>http://{{api.backend2.host}}/services/s1</simple>
+      </setHeader>
+      <to id="end2" uri="cxf:bean:s1"/>
+
+      <!-- UNWRAPS CXF RESPONSE (CXF delivers array) -->
+      <setBody>
+      	<simple>${body[0]}</simple>
+      </setBody>
+
+      <!-- KEEP RESPONSE -->
+      <setProperty propertyName="subscriber-response-soap">
+        <simple resultType="String">${body}</simple>
+      </setProperty>
+
+      <log message="Backend2 is: ${exchangeProperty.subscriber-response-soap}"/>
+    </route>
+
+    <!-- MAPS JSON to SOAP request -->
+    <route id="json2soap">
+      <from uri="direct:json2soap"/>
+
+      <!-- SET ORIGINAL JSON REQUEST -->
+      <setBody>
+        <simple>${exchangeProperty.request}</simple>
+      </setBody>
+
+      <!-- TRANSFORM REQUEST JSON-to-SOAP -->
+      <to uri="direct:json2xml"/>
+      <to uri="xslt:xslt/request.xsl?saxon=true"/>
+    </route>
+
+    <!-- MERGES DATA to JSON response -->
+    <route id="mapResponse">
+      <from uri="direct:mapResponse"/>
+
+      <!-- PREPARE XSLT INPUTS -->
+      <setHeader headerName="response1">
+        <simple resultType="org.w3c.dom.Document">${exchangeProperty.subscriber-response-rest}</simple>
+      </setHeader>
+      <setHeader headerName="response2">
+        <simple  resultType="org.w3c.dom.Document">${exchangeProperty.subscriber-response-soap}</simple>
+      </setHeader>
+
+      <!-- SET DUMMY XSLT INPUT (XSLT inputs passed as headers) -->
+      <setBody>
+        <simple>&lt;data/&gt;</simple>
+      </setBody>
+
+      <!-- TRANSFORM REQUEST JSON-to-XML -->
+      <to uri="xslt:xslt/response.xsl?saxon=true&amp;saxonExtensionFunctions=#x2j"/>
+     
+      <removeHeaders pattern="*"/>
+    </route>
+
+    <!-- HELPER JSON to XML transformer -->
+    <route>
+      <from uri="direct:json2xml"/>
+      <convertBodyTo type="String"/>
+      <log message="before: ${body}"/>
+      <to uri="dataformat:json-jackson:unmarshal?unmarshalTypeName=java.util.Map"/>
+      <to uri="dataformat:jacksonxml:marshal?useList=true&amp;prettyPrint=true"/>
+      <log message="after: ${body}"/>
+      <convertBodyTo type="String"/>
+    </route>
+    
+    <!-- HELPER XML to JSON transformer -->
+    <route>
+      <from uri="direct:xml2json"/>
+      <log message="x2j input: ${body}"/>
+		  <to uri="xslt:xslt/xml-to-json.xsl?saxon=true"/>
+      <log message="x2j output: ${body}"/>
+    </route>
+
+  </camelContext>
+
+</blueprint>
