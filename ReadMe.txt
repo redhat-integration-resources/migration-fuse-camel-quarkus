@@ -11,7 +11,4 @@ The folders in this repository contain the following:
 
 ## Service description
 
-The service implemente in Fuse (to migrate to Camel Quarkus) implements a composition workflow. The service exposes a REST operation. When a client posts a request, Camel integrates with a REST (Json) and SOAP endpoint to obtain retrieve data. The data is merged with a data transformation and returned to the caller in JSON format.
-
-
-
+The service in Fuse (to migrate to Camel Quarkus) implements a composition workflow. The service exposes a REST operation. When a client posts a request, Camel integrates with a REST (Json) and SOAP endpoint to obtain retrieve data. The data is merged with a data transformation and returned to the caller in JSON format.
